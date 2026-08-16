@@ -1,0 +1,8 @@
+* text=auto
+
+# EDI files must never have their line endings normalised. In X12 the segment
+# terminator is declared by the interchange itself and is frequently a newline, so
+# a checkout that rewrote LF to CRLF would change what the file means — and would
+# silently change what the tests are testing.
+*.edi -text
+*.x12 -text

@@ -1,0 +1,42 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Matches the library's lowest .NET (not .NET Framework) target, so a clone with
+         nothing but the .NET 8 SDK restores, builds and tests without a global.json
+         pinning a newer SDK. RollForward lets the same net8.0 test host run on a
+         machine that only has a newer runtime installed. -->
+    <TargetFramework>net8.0</TargetFramework>
+    <RollForward>Major</RollForward>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The samples in the README are also test inputs, so that a sample which stops
+         parsing fails the build instead of quietly misleading a reader. -->
+    <None Include="..\..\samples\*.edi" Link="samples\%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\EdiX12.Core\EdiX12.Core.csproj" />
+    <!-- The CLI is exercised through Cli.Run rather than by spawning edix12.exe, so the
+         tests cover the argument handling and the exit codes without depending on a
+         packed tool being installed. EdiX12.Cli grants this project InternalsVisibleTo. -->
+    <ProjectReference Include="..\..\src\EdiX12.Cli\EdiX12.Cli.csproj" />
+  </ItemGroup>
+
+</Project>

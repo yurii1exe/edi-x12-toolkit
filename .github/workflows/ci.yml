@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build:
+    name: build (${{ matrix.os }}, .NET ${{ matrix.dotnet }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        # 8.0.x proves the claim in the README that a clone with nothing but the
+        # .NET 8 SDK builds and tests. 10.0.x proves it has not broken on current.
+        dotnet: ['8.0.x', '10.0.x']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET ${{ matrix.dotnet }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ matrix.dotnet }}
+
+      # Deliberately NOT cached, and deliberately its own step. A clean runner with
+      # no NuGet.config and no credentials restoring successfully is mechanical proof
+      # that this package needs no private feed — nuget.org is the only source.
+      - name: Restore (clean runner, public feeds only)
+        run: dotnet restore EdiX12.sln
+
+      - name: Build (warnings are errors)
+        run: dotnet build EdiX12.sln -c Release --no-restore -warnaserror
+
+      - name: Test
+        run: dotnet test EdiX12.sln -c Release --no-build --verbosity normal
+
+  pack:
+    name: pack
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore EdiX12.sln
+
+      - name: Build
+        run: dotnet build EdiX12.sln -c Release --no-restore -warnaserror
+
+      # Packs the whole solution: EdiX12.Core as a library and EdiX12.Cli as a dotnet tool.
+      - name: Pack
+        run: dotnet pack EdiX12.sln -c Release --no-build -o artifacts
+
+      # Installing the tool from the package that was just built, and running it against
+      # the samples, is the only way to find out that the package itself is wrong — a bad
+      # ToolCommandName or a PackageReadmeFile pointing at nothing does not fail a build.
+      # The last command is expected to fail: 214-broken.edi is broken on purpose, and an
+      # exit code of 1 from validate is the contract.
+      - name: Install the packed tool and run it
+        run: |
+          dotnet tool install EdiX12.Cli --prerelease \
+            --add-source ./artifacts --tool-path ./.tool
+          ./.tool/edix12 --version
+          ./.tool/edix12 delimiters samples/214-pipe-delimited.edi
+          ./.tool/edix12 parse samples/214-shipment-status.edi --pretty
+          if ./.tool/edix12 validate samples/214-broken.edi; then
+            echo "::error::validate exited 0 on a deliberately broken interchange"
+            exit 1
+          fi
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: nupkg
+          path: artifacts/*.nupkg
+          if-no-files-found: error

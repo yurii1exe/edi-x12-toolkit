@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- netstandard2.0 keeps the door open for .NET Framework 4.6.2+ consumers,
+         which is most of the freight/3PL world. net8.0 for everyone else. -->
+    <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageId>EdiX12.Core</PackageId>
+    <Version>0.1.0-alpha</Version>
+    <Authors>Yurii Shchehliuk</Authors>
+    <Copyright>Copyright (c) 2026 Yurii Shchehliuk</Copyright>
+    <Description>Parse ANSI X12 freight EDI in .NET. Reads delimiters from the ISA segment instead of hard-coding them.</Description>
+    <PackageTags>edi;x12;ansi-x12;freight;logistics;214;parser;dotnet;csharp;trucking;supply-chain;edi-214;tms</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/yurii1exe/edi-x12-toolkit</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/yurii1exe/edi-x12-toolkit</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>

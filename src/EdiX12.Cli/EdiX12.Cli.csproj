@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- Matches the library's lowest .NET target, so a clone with nothing but the
+         .NET 8 SDK builds the whole solution. RollForward lets the packaged tool run
+         on a machine that only has a newer runtime installed, which is most machines. -->
+    <TargetFramework>net8.0</TargetFramework>
+    <RollForward>Major</RollForward>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <AssemblyName>edix12</AssemblyName>
+    <RootNamespace>EdiX12.Cli</RootNamespace>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>edix12</ToolCommandName>
+    <PackageId>EdiX12.Cli</PackageId>
+    <Version>0.1.0-alpha</Version>
+    <Authors>Yurii Shchehliuk</Authors>
+    <Copyright>Copyright (c) 2026 Yurii Shchehliuk</Copyright>
+    <Description>Command-line tool for ANSI X12 freight EDI: parse an interchange to JSON, validate the envelope, and print the delimiters the ISA declares.</Description>
+    <PackageTags>edi;x12;ansi-x12;freight;logistics;214;parser;cli;dotnet-tool;trucking;supply-chain;edi-214;tms</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/yurii1exe/edi-x12-toolkit</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/yurii1exe/edi-x12-toolkit</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EdiX12.Core\EdiX12.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The CLI is driven end to end from the test project through Cli.Run, so that the
+         argument handling and the exit codes are covered without spawning a process. -->
+    <InternalsVisibleTo Include="EdiX12.Tests" />
+  </ItemGroup>
+
+</Project>
