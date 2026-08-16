@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- net10.0 because the project under test is a Blazor WebAssembly app on net10.0.
+         This project deliberately lives outside EdiX12.sln so that the claim in the
+         README — a clone with nothing but the .NET 8 SDK builds and tests the library,
+         the tool and the test suite — stays true. It is built and run by
+         EdiX12.Playground.sln and by the pages workflow. -->
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- bUnit renders the Razor component into a real DOM in-process, so the markup the
+         visitor sees is asserted rather than assumed. -->
+    <PackageReference Include="bunit" Version="2.9.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The samples on disk, so a test can assert that what the page embeds is
+         byte-for-byte what the repository ships. -->
+    <None Include="..\..\samples\*.edi" Link="samples\%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The page shell and its stylesheet, so a test can assert the README's claim that
+         the playground loads nothing from another host. -->
+    <None Include="..\EdiX12.Playground\wwwroot\index.html" Link="site\index.html"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\EdiX12.Playground\wwwroot\css\app.css" Link="site\app.css"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EdiX12.Playground\EdiX12.Playground.csproj" />
+  </ItemGroup>
+
+</Project>

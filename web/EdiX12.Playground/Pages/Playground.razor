@@ -1,0 +1,488 @@
+@page "/"
+@using System.Text
+@using EdiX12.Playground.Model
+@inject IJSRuntime Js
+
+<PageTitle>X12 playground — parse and validate ANSI X12 EDI in your browser</PageTitle>
+
+<header class="topbar">
+    <div class="brand">
+        <span class="brand-name">EdiX12</span>
+        <span class="brand-sub">X12 interchange playground</span>
+    </div>
+    <nav class="topnav">
+        <a href="https://github.com/yurii1exe/edi-x12-toolkit">Source</a>
+        <a href="https://github.com/yurii1exe/edi-x12-toolkit#the-delimiter-problem">The delimiter problem</a>
+    </nav>
+</header>
+
+<p class="privacy">
+    <strong>Your file never leaves this browser.</strong>
+    The parser is <code>EdiX12.Core</code> compiled to WebAssembly and running on this device.
+    Nothing is uploaded, nothing is stored, nothing is logged — after the page loads it makes
+    no network requests at all. Paste a real interchange.
+</p>
+
+<main class="grid">
+
+    <section class="pane pane-input">
+        <div class="pane-head">
+            <h2>Interchange</h2>
+            <span class="meta">@_input.Length chars@(_segmentCount > 0 ? $" · {_segmentCount} segments" : "")</span>
+        </div>
+
+        <div class="samples">
+            <span class="samples-label">Load a sample</span>
+            @foreach (SampleInterchange sample in SampleInterchanges.All)
+            {
+                <button type="button"
+                        class="@(_activeSample == sample.FileName ? "chip chip-on" : "chip")"
+                        title="@sample.Blurb"
+                        @onclick="() => LoadSample(sample)">
+                    @sample.Label
+                </button>
+            }
+        </div>
+
+        @if (_activeBlurb is not null)
+        {
+            <p class="sample-blurb"><code>samples/@_activeSample</code> — @_activeBlurb</p>
+        }
+
+        <label class="dropzone">
+            <span>Drop an <code>.edi</code> / <code>.x12</code> file here, or tap to choose one</span>
+            <InputFile OnChange="OnFileChosen" class="dropzone-input" />
+        </label>
+
+        <textarea class="editor"
+                  spellcheck="false"
+                  autocapitalize="off"
+                  autocorrect="off"
+                  placeholder="ISA*00*          *00*          *ZZ*SENDER..."
+                  value="@_input"
+                  @oninput="OnInput"></textarea>
+
+        <div class="actions">
+            <button type="button" class="btn btn-primary" @onclick="() => Parse(_input)">Parse</button>
+            <button type="button" class="btn" @onclick="Clear">Clear</button>
+            @if (_result is not null || _error is not null)
+            {
+                <button type="button" class="btn" @onclick="CopyReport">@_copyLabel</button>
+            }
+            @if (!_autoParse)
+            {
+                <span class="meta">Large file — press Parse.</span>
+            }
+        </div>
+    </section>
+
+    <section class="pane pane-output">
+
+        @if (_error is not null)
+        {
+            <div class="card card-fatal">
+                <div class="card-head">
+                    <h2>Cannot parse</h2>
+                    @if (_errorPosition is int pos)
+                    {
+                        <span class="badge badge-bad">segment @pos</span>
+                    }
+                </div>
+                <p class="fatal-message">@_error</p>
+                <p class="fatal-note">
+                    <code>X12ParseException</code> is thrown only for structural failures — an unreadable
+                    ISA, or an SE with no ST. Everything else comes back as a diagnostic instead, because a
+                    parser that refuses to show you a bad file is useless for the one job you need it for.
+                </p>
+            </div>
+        }
+
+        @if (_result is { } r)
+        {
+            <div class="card">
+                <div class="card-head">
+                    <h2>Delimiters, as this interchange declared them</h2>
+                    <span class="meta">read from the ISA, not assumed</span>
+                </div>
+                <table class="tbl tbl-delim">
+                    <thead>
+                    <tr><th>Character</th><th>Role</th><th>Declared by</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td><span class="glyph">@Describe(r.Delimiters.Element)</span></td>
+                        <td>Data element separator</td>
+                        <td class="dim">ISA character offset 3</td>
+                    </tr>
+                    <tr>
+                        <td><span class="glyph">@Describe(r.Delimiters.Component)</span></td>
+                        <td>Component element separator</td>
+                        <td class="dim">ISA16, at character offset 104</td>
+                    </tr>
+                    <tr>
+                        <td><span class="glyph">@Describe(r.Delimiters.Segment)</span></td>
+                        <td>Segment terminator</td>
+                        <td class="dim">no element names it — the character after ISA16</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            @if (r.Delimiters.Repetition is char rep)
+                            {
+                                <span class="glyph">@Describe(rep)</span>
+                            }
+                            else
+                            {
+                                <span class="glyph glyph-none">none</span>
+                            }
+                        </td>
+                        <td>Repetition separator</td>
+                        <td class="dim">
+                            @if (r.Delimiters.Repetition is null)
+                            {
+                                @($"ISA11 is not a delimiter at version {r.Interchange.VersionNumber}")
+                            }
+                            else
+                            {
+                                @("ISA11, 5010 and later only")
+                            }
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <div class="card-head">
+                    <h2>Envelope</h2>
+                    <span class="@(r.Interchange.IsProduction ? "badge badge-prod" : "badge badge-test")">
+                        ISA15 @r.Interchange.UsageIndicator — @(r.Interchange.IsProduction ? "production" : "test")
+                    </span>
+                </div>
+                <dl class="facts">
+                    <div>
+                        <dt>Sender <span class="ref">ISA06</span></dt>
+                        <dd>
+                            <span class="ident">@r.Interchange.SenderId</span>
+                            <span class="dim">@Qualifier(r.Interchange.SenderQualifier)</span>
+                        </dd>
+                    </div>
+                    <div>
+                        <dt>Receiver <span class="ref">ISA08</span></dt>
+                        <dd>
+                            <span class="ident">@r.Interchange.ReceiverId</span>
+                            <span class="dim">@Qualifier(r.Interchange.ReceiverQualifier)</span>
+                        </dd>
+                    </div>
+                    <div>
+                        <dt>Control number <span class="ref">ISA13</span></dt>
+                        <dd><span class="ident">@r.Interchange.ControlNumber</span></dd>
+                    </div>
+                    <div>
+                        <dt>Version <span class="ref">ISA12</span></dt>
+                        <dd><span class="ident">@r.Interchange.VersionNumber</span></dd>
+                    </div>
+                    <div>
+                        <dt>Date/time <span class="ref">ISA09/10</span></dt>
+                        <dd>
+                            @if (r.Interchange.InterchangeDate is DateTime dt)
+                            {
+                                <span class="ident">@dt.ToString("yyyy-MM-dd HH:mm")</span>
+                                <span class="dim">no time zone; X12 carries none</span>
+                            }
+                            else
+                            {
+                                <span class="dim">unparseable</span>
+                            }
+                        </dd>
+                    </div>
+                    <div>
+                        <dt>TA1 requested <span class="ref">ISA14</span></dt>
+                        <dd><span class="ident">@(r.Interchange.AcknowledgmentRequested ? "yes" : "no")</span></dd>
+                    </div>
+                </dl>
+                <p class="counts">
+                    @r.Interchange.Groups.Count group@(r.Interchange.Groups.Count == 1 ? "" : "s") ·
+                    @r.TransactionCount transaction set@(r.TransactionCount == 1 ? "" : "s") ·
+                    @r.Interchange.Segments.Count segments
+                </p>
+            </div>
+
+            <div class="card">
+                <div class="card-head">
+                    <h2>Validation</h2>
+                    <span class="@(r.Diagnostics.Count == 0 ? "badge badge-ok" : "badge badge-bad")">
+                        @(r.Diagnostics.Count == 0 ? "9 envelope checks passed" : $"{r.Diagnostics.Count} diagnostic{(r.Diagnostics.Count == 1 ? "" : "s")}")
+                    </span>
+                </div>
+
+                @if (r.Diagnostics.Count == 0)
+                {
+                    <p class="dim">
+                        The three trailers are present, the three counts match, and the three control
+                        numbers echo. That says nothing about the business data — only that the envelope
+                        will survive the receiver's first pass.
+                    </p>
+                }
+                else
+                {
+                    <table class="tbl tbl-diag">
+                        <thead>
+                        <tr><th>Code</th><th>Seg</th><th>Element</th><th>What is wrong</th></tr>
+                        </thead>
+                        <tbody>
+                        @foreach (X12Diagnostic d in r.Diagnostics)
+                        {
+                            <tr>
+                                <td><code class="code-bad">@d.Code</code></td>
+                                <td class="num">@d.SegmentPosition</td>
+                                <td>
+                                    @{
+                                        (string? elementRef, string? elementName) = X12Reference.DiagnosticElement(d.Code);
+                                    }
+                                    @if (elementRef is not null)
+                                    {
+                                        <span class="ident">@elementRef</span>
+                                        <span class="dim">@elementName</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="dim">—</span>
+                                    }
+                                </td>
+                                <td>@d.Message</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                    <p class="dim small">
+                        <code>Validate()</code> returns diagnostics rather than throwing. A wrong SE01 is the
+                        most common reason a partner rejects an otherwise correct file, and the rejection
+                        almost never says which number was wrong.
+                    </p>
+                }
+            </div>
+
+            <div class="card">
+                <div class="card-head">
+                    <h2>Segments</h2>
+                    <span class="meta">position, identifier, elements by number</span>
+                </div>
+                <table class="tbl tbl-seg">
+                    <tbody>
+                    @foreach (SegmentRow row in r.Rows)
+                    {
+                        <tr class="@RowClass(row, r)">
+                            <td class="num">@row.Segment.Position</td>
+                            <td class="segid" style="--depth:@row.Depth">
+                                <span class="id">@row.Segment.Id</span>
+                                @if (row.Note is not null)
+                                {
+                                    <span class="role">@row.Note</span>
+                                }
+                            </td>
+                            <td class="elements">
+                                @for (int i = 1; i <= row.Segment.ElementCount; i++)
+                                {
+                                    string value = row.Segment[i];
+                                    string? name = X12Reference.ElementName(row.Segment.Id, i);
+                                    <span class="el @(value.Trim().Length == 0 ? "el-empty" : "")"
+                                          title="@(name is null ? row.Segment.ElementReference(i) : $"{row.Segment.ElementReference(i)} — {name}")">
+                                        <span class="el-n">@i.ToString("00")</span>
+                                        <span class="el-v">@(value.Trim().Length == 0 ? "∅" : value.Trim())</span>
+                                    </span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+                <p class="dim small">
+                    Hover an element for its specification reference and name. Empty elements
+                    (<span class="el el-empty"><span class="el-v">∅</span></span>) keep their position — element 05
+                    stays element 05. Values are shown trimmed; the parser keeps them exactly as sent.
+                </p>
+            </div>
+        }
+
+        @if (_result is null && _error is null)
+        {
+            <div class="card card-empty">
+                <h2>Nothing parsed yet</h2>
+                <p>
+                    Paste an interchange on the left, drop a file, or load
+                    <button type="button" class="linkish" @onclick="() => LoadSample(SampleInterchanges.All[0])">the broken sample</button>
+                    to see the diagnostics a receiving partner would produce.
+                </p>
+            </div>
+        }
+    </section>
+</main>
+
+<footer class="foot">
+    <span>
+        <code>EdiX12.Core</code> 0.1.0-alpha — envelope only. Typed 214 model is v0.2; see the
+        <a href="https://github.com/yurii1exe/edi-x12-toolkit#roadmap">roadmap</a>.
+    </span>
+    <span>
+        Element names are labels from the published ANSI X12 specification. Not affiliated with ASC X12.
+    </span>
+</footer>
+
+@code {
+    private const int AutoParseLimit = 64 * 1024;
+
+    private string _input = string.Empty;
+    private string? _activeSample;
+    private string? _activeBlurb;
+    private ParseResult? _result;
+    private string? _error;
+    private int? _errorPosition;
+    private int _segmentCount;
+    private bool _autoParse = true;
+    private string _copyLabel = "Copy report";
+
+    protected override void OnInitialized() => LoadSample(SampleInterchanges.All[0]);
+
+    private void OnInput(ChangeEventArgs e)
+    {
+        _input = e.Value as string ?? string.Empty;
+        _activeSample = null;
+        _activeBlurb = null;
+        _copyLabel = "Copy report";
+
+        _autoParse = _input.Length <= AutoParseLimit;
+        if (_autoParse)
+        {
+            Parse(_input);
+        }
+    }
+
+    private void LoadSample(SampleInterchange sample)
+    {
+        _input = sample.Text;
+        _activeSample = sample.FileName;
+        _activeBlurb = sample.Blurb;
+        _autoParse = true;
+        _copyLabel = "Copy report";
+        Parse(_input);
+    }
+
+    private void Clear()
+    {
+        _input = string.Empty;
+        _activeSample = null;
+        _activeBlurb = null;
+        _result = null;
+        _error = null;
+        _errorPosition = null;
+        _segmentCount = 0;
+        _autoParse = true;
+        _copyLabel = "Copy report";
+    }
+
+    private async Task OnFileChosen(InputFileChangeEventArgs e)
+    {
+        // 8 MB ceiling. The browser holds the whole file in memory here and never sends it
+        // anywhere; the limit exists so a mis-drop cannot lock up a phone.
+        using Stream stream = e.File.OpenReadStream(8 * 1024 * 1024);
+        using var reader = new StreamReader(stream);
+        _input = await reader.ReadToEndAsync();
+        _activeSample = null;
+        _activeBlurb = null;
+        _copyLabel = "Copy report";
+        _autoParse = _input.Length <= AutoParseLimit;
+        Parse(_input);
+    }
+
+    private void Parse(string text)
+    {
+        _error = null;
+        _errorPosition = null;
+        _result = null;
+        _segmentCount = 0;
+
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return;
+        }
+
+        try
+        {
+            Interchange interchange = X12Parser.Parse(text);
+            _result = ParseResult.From(interchange);
+            _segmentCount = interchange.Segments.Count;
+        }
+        catch (X12ParseException ex)
+        {
+            _error = ex.Message;
+            _errorPosition = ex.SegmentPosition > 0 ? ex.SegmentPosition : null;
+        }
+    }
+
+    private async Task CopyReport()
+    {
+        try
+        {
+            await Js.InvokeVoidAsync("navigator.clipboard.writeText", BuildReport());
+            _copyLabel = "Copied";
+        }
+        catch (JSException)
+        {
+            _copyLabel = "Clipboard blocked";
+        }
+    }
+
+    private string BuildReport()
+    {
+        var sb = new StringBuilder();
+
+        if (_error is not null)
+        {
+            sb.Append("X12 parse failed: ").AppendLine(_error);
+            return sb.ToString();
+        }
+
+        if (_result is not { } r)
+        {
+            return string.Empty;
+        }
+
+        sb.AppendLine(r.Interchange.ToString());
+        sb.AppendLine(r.Delimiters.ToString());
+        sb.AppendLine();
+
+        if (r.Diagnostics.Count == 0)
+        {
+            sb.AppendLine("No envelope diagnostics.");
+        }
+        else
+        {
+            foreach (X12Diagnostic d in r.Diagnostics)
+            {
+                sb.AppendLine(d.ToString());
+            }
+        }
+
+        sb.AppendLine();
+        sb.AppendLine("Produced by https://yurii1exe.github.io/edi-x12-toolkit/ (parsed locally in the browser).");
+        return sb.ToString();
+    }
+
+    private static string Describe(char c) => c switch
+    {
+        '\n' => "\\n",
+        '\r' => "\\r",
+        '\t' => "\\t",
+        ' ' => "space",
+        _ => c.ToString(),
+    };
+
+    private static string Qualifier(string code)
+    {
+        string? name = X12Reference.IdQualifier(code);
+        return name is null ? $"qualifier {code}" : $"{code} — {name}";
+    }
+
+    private static string RowClass(SegmentRow row, ParseResult result) =>
+        result.FlaggedPositions.Contains(row.Segment.Position) ? $"{row.Kind} flagged" : row.Kind;
+}

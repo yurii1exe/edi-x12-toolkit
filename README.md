@@ -2,13 +2,8 @@
 
 [![CI](https://github.com/yurii1exe/edi-x12-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/yurii1exe/edi-x12-toolkit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-
-<!-- Swap the line above for these two the moment 0.1.0-alpha is pushed to nuget.org,
-     and delete the "not yet on nuget.org" note below:
-[![NuGet](https://img.shields.io/nuget/v/EdiX12.Core.svg?label=EdiX12.Core)](https://www.nuget.org/packages/EdiX12.Core/)
-[![NuGet](https://img.shields.io/nuget/v/EdiX12.Cli.svg?label=EdiX12.Cli)](https://www.nuget.org/packages/EdiX12.Cli/)
--->
-
+[![NuGet](https://img.shields.io/nuget/vpre/EdiX12.Core.svg?label=EdiX12.Core)](https://www.nuget.org/packages/EdiX12.Core/)
+[![NuGet](https://img.shields.io/nuget/vpre/EdiX12.Cli.svg?label=EdiX12.Cli)](https://www.nuget.org/packages/EdiX12.Cli/)
 
 Parse and validate ANSI X12 freight EDI in .NET.
 
@@ -28,14 +23,15 @@ which is entirely legal, and common.
 EdiX12 handles the envelope, the delimiters and the control numbers correctly, so you work
 with typed objects instead of string-splitting.
 
-> **Not yet on nuget.org.** `0.1.0-alpha` is packed and exercised in CI — the pack job
-> installs the tool from the package it just built and runs it against the samples — but
-> it has not been pushed to the feed. Until it is, clone the repo and `dotnet build`. The
-> two install commands in this README are written for the day it lands, not for today.
-
 ```bash
-dotnet add package EdiX12.Core --prerelease   # once published
+dotnet add package EdiX12.Core --prerelease
 ```
+
+`--prerelease` is not optional: `0.1.0-alpha` is a prerelease, and NuGet will not resolve
+it without the flag. The two badges above read the feed live, so they say what is actually
+published rather than what this file claims. Every package is produced by the CI pack job,
+which installs the `edix12` tool from the package it has just built and runs it against
+the samples in this repository before the artifact is kept.
 
 ```csharp
 var interchange = X12Parser.Parse(File.ReadAllText("shipment.edi"));
@@ -87,16 +83,77 @@ var delimiters = X12Tokenizer.ReadDelimiters(text);
 document with different delimiters. They parse to the same object graph. There is a test
 that asserts it.
 
+## The playground
+
+![The X12 playground loading two of its built-in samples: the delimiter table changing from asterisk, colon and tilde to pipe, greater-than and a newline when the same document is loaded pipe-delimited, the segment-by-segment breakdown, and the broken sample's X12-SE01-COUNT diagnostic with the SE row highlighted](https://raw.githubusercontent.com/yurii1exe/edi-x12-toolkit/main/docs/playground-demo.gif)
+
+<sub>It opens on `samples/214-shipment-status.edi`: the delimiters that interchange declared,
+where each one was read from in the ISA, the envelope, and nine passing envelope checks.
+One click loads the same document delimited with `|` and terminated by a newline — the
+table follows the ISA. Then every segment with its envelope role and its elements by
+number, and one more click loads the broken sample: `X12-SE01-COUNT` on `SE01`, which
+declares 9 segments where the transaction set contains 7, with that SE row highlighted in
+the segment table. Every parse in the frame is `EdiX12.Core` compiled to WebAssembly and
+executed by the browser — the interchange is never uploaded, and once the page has loaded
+no request leaves it.</sub>
+
+`web/EdiX12.Playground` is a browser page that parses an interchange you paste into it and
+shows the delimiters it declared, its envelope, its diagnostics and every segment with the
+elements named. It is a Blazor WebAssembly app with a project reference to
+`src/EdiX12.Core`, so the parse you see is `X12Parser.Parse` — the same method the package
+ships — compiled to WebAssembly and executed by your browser.
+
+That reference is the point. A JavaScript re-implementation would be a second parser with
+its own bugs, and a demo that agreed with the library only by coincidence. This one cannot
+disagree with it: there is only one parser in the repository.
+
+Nothing is uploaded. `Program.cs` registers no `HttpClient`, and the four one-click samples
+are embedded resources built from `samples/` rather than fetched. Neither the page nor its
+stylesheet loads a resource from another host — no CDN script, no web font, no analytics;
+the only external URLs on the page are links you can choose to click. After the page has
+loaded it makes no network requests at all. There is a test that asserts the no-external-
+resource half of that.
+
+Run it locally:
+
+```bash
+dotnet run --project web/EdiX12.Playground
+```
+
+The playground is **not** part of `EdiX12.sln`. It targets `net10.0`, and keeping it out is
+what lets the claim below — that the .NET 8 SDK builds and tests everything in the solution
+— stay true. It has its own solution:
+
+```bash
+dotnet test web/EdiX12.Playground.sln     # 47 tests, .NET 10 SDK
+```
+
+Twelve of those render the page component into a DOM and assert what a visitor sees: that
+the broken sample's three diagnostics arrive in segment order with `SE01` named beside
+`X12-SE01-COUNT`, that the SE, GE and IEA rows are the ones highlighted, that a
+pipe-delimited file reports `|`, `>` and `\n`, and that a 4010 interchange says ISA11 is
+not a delimiter rather than showing you a `U`.
+
+`dotnet publish` produces a static site — 6.2 MB across 42 files, of which 6.1 MB is the
+.NET runtime and the base class library and 23 KB is `EdiX12.Core` itself. The runtime is
+cached by the browser after the first visit.
+
+`.github/workflows/pages.yml` builds, tests and publishes it to GitHub Pages, rewriting
+`<base href>` to the project-site path and writing a `.nojekyll` so that `_framework` is
+not swallowed. The workflow does not switch Pages on: until
+**Settings → Pages → Source** is set to **GitHub Actions**, its deploy job fails and no
+site exists.
+
 ## Command line
 
 `EdiX12.Cli` packages the same parser as a .NET global tool called `edix12`:
 
 ```bash
-dotnet tool install --global EdiX12.Cli --prerelease   # once published
+dotnet tool install --global EdiX12.Cli --prerelease
 ```
 
-Until then, `dotnet run --project src/EdiX12.Cli -- <command>` does the same thing from a
-clone. Every transcript below is real output, copied verbatim.
+From a clone, `dotnet run --project src/EdiX12.Cli -- <command>` does the same thing
+without installing anything. Every transcript below is real output, copied verbatim.
 
 Three commands. Each takes a file path, or reads the interchange from stdin when given `-`
 or nothing at all.
@@ -356,9 +413,10 @@ dotnet test
 dotnet run --project src/EdiX12.Cli -- validate samples/214-broken.edi
 ```
 
-The .NET 8 SDK is the minimum, and it is enough: there is no `global.json` pinning a newer
-SDK, the solution is in the classic `.sln` format, and both the test project and the CLI
-target `net8.0`.
+The .NET 8 SDK is the minimum for `EdiX12.sln`, and it is enough: there is no `global.json`
+pinning a newer SDK, the solution is in the classic `.sln` format, and both the test project
+and the CLI target `net8.0`. The browser playground is the one thing that needs a newer SDK,
+which is why it sits in `web/EdiX12.Playground.sln` and not in this one.
 CI runs the whole build on 8.0.x and 10.0.x, on Linux and Windows, restoring from a clean
 runner with no `NuGet.config` — so the package needs nothing but nuget.org.
 

@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
+
+    <!-- The whole point of this app is that nothing leaves the browser, so it has to be
+         small enough that a broker on a phone waits for it. No ICU (the library formats
+         with InvariantCulture only) and no time zone database (X12 carries no zone). -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <BlazorEnableTimeZoneSupport>false</BlazorEnableTimeZoneSupport>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.7" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.7" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\EdiX12.Core\EdiX12.Core.csproj" />
+  </ItemGroup>
+
+  <!-- The one-click examples are the repository's own samples, embedded rather than
+       fetched. One source of truth, and no network call from a page that promises not to
+       make any. LogicalName is explicit because the file names contain dots. -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\samples\214-shipment-status.edi" LogicalName="samples/214-shipment-status.edi" />
+    <EmbeddedResource Include="..\..\samples\214-pipe-delimited.edi" LogicalName="samples/214-pipe-delimited.edi" />
+    <EmbeddedResource Include="..\..\samples\214-broken.edi" LogicalName="samples/214-broken.edi" />
+    <EmbeddedResource Include="..\..\samples\214-4010.edi" LogicalName="samples/214-4010.edi" />
+  </ItemGroup>
+
+</Project>

@@ -10,12 +10,27 @@ made early.
 
 ## [Unreleased]
 
+### Added
+
+- **The X12 playground** (`web/EdiX12.Playground`) — a Blazor WebAssembly page that parses
+  a pasted interchange in the browser and shows its delimiters, envelope, diagnostics and
+  segments with the elements named. It has a project reference to `EdiX12.Core`, so it runs
+  the library rather than a re-implementation of it. No `HttpClient` is registered and the
+  one-click samples are embedded from `samples/`, so the page makes no network request once
+  it has loaded. `.github/workflows/pages.yml` builds, tests and publishes it; enabling
+  GitHub Pages is a repository setting and is not done by the workflow.
+
+### Changed
+
+- `EdiX12.Core` and `EdiX12.Cli` now pack a `.snupkg` and carry Source Link metadata, so a
+  consumer can step into the library from their own debugger.
+
 Next up is v0.2, the typed 214 model — see the roadmap in the README.
 
 ## [0.1.0-alpha] — 2026-08-15
 
 First release: the envelope, parsed correctly, shipped both as a library and as a tool.
-Neither package is on nuget.org yet — this entry describes what `dotnet pack` produces.
+Both packages are prereleases, so `--prerelease` is required to install either one.
 
 ### Added — `EdiX12.Core`
 
