@@ -2,13 +2,8 @@
 
 [![CI](https://github.com/yurii1exe/edi-x12-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/yurii1exe/edi-x12-toolkit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-
-<!-- Swap the line above for these two the moment 0.1.0-alpha is pushed to nuget.org,
-     and delete the "not yet on nuget.org" note below:
-[![NuGet](https://img.shields.io/nuget/v/EdiX12.Core.svg?label=EdiX12.Core)](https://www.nuget.org/packages/EdiX12.Core/)
-[![NuGet](https://img.shields.io/nuget/v/EdiX12.Cli.svg?label=EdiX12.Cli)](https://www.nuget.org/packages/EdiX12.Cli/)
--->
-
+[![NuGet](https://img.shields.io/nuget/vpre/EdiX12.Core.svg?label=EdiX12.Core)](https://www.nuget.org/packages/EdiX12.Core/)
+[![NuGet](https://img.shields.io/nuget/vpre/EdiX12.Cli.svg?label=EdiX12.Cli)](https://www.nuget.org/packages/EdiX12.Cli/)
 
 Parse and validate ANSI X12 freight EDI in .NET.
 
@@ -28,14 +23,15 @@ which is entirely legal, and common.
 EdiX12 handles the envelope, the delimiters and the control numbers correctly, so you work
 with typed objects instead of string-splitting.
 
-> **Not yet on nuget.org.** `0.1.0-alpha` is packed and exercised in CI — the pack job
-> installs the tool from the package it just built and runs it against the samples — but
-> it has not been pushed to the feed. Until it is, clone the repo and `dotnet build`. The
-> two install commands in this README are written for the day it lands, not for today.
-
 ```bash
-dotnet add package EdiX12.Core --prerelease   # once published
+dotnet add package EdiX12.Core --prerelease
 ```
+
+`--prerelease` is not optional: `0.1.0-alpha` is a prerelease, and NuGet will not resolve
+it without the flag. The two badges above read the feed live, so they say what is actually
+published rather than what this file claims. Every package is produced by the CI pack job,
+which installs the `edix12` tool from the package it has just built and runs it against
+the samples in this repository before the artifact is kept.
 
 ```csharp
 var interchange = X12Parser.Parse(File.ReadAllText("shipment.edi"));
@@ -92,11 +88,11 @@ that asserts it.
 `EdiX12.Cli` packages the same parser as a .NET global tool called `edix12`:
 
 ```bash
-dotnet tool install --global EdiX12.Cli --prerelease   # once published
+dotnet tool install --global EdiX12.Cli --prerelease
 ```
 
-Until then, `dotnet run --project src/EdiX12.Cli -- <command>` does the same thing from a
-clone. Every transcript below is real output, copied verbatim.
+From a clone, `dotnet run --project src/EdiX12.Cli -- <command>` does the same thing
+without installing anything. Every transcript below is real output, copied verbatim.
 
 Three commands. Each takes a file path, or reads the interchange from stdin when given `-`
 or nothing at all.

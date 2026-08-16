@@ -15,7 +15,7 @@ Next up is v0.2, the typed 214 model — see the roadmap in the README.
 ## [0.1.0-alpha] — 2026-08-15
 
 First release: the envelope, parsed correctly, shipped both as a library and as a tool.
-Neither package is on nuget.org yet — this entry describes what `dotnet pack` produces.
+Both packages are prereleases, so `--prerelease` is required to install either one.
 
 ### Added — `EdiX12.Core`
 

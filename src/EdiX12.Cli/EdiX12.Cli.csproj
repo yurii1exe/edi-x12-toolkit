@@ -30,6 +30,17 @@
     <PackageProjectUrl>https://github.com/yurii1exe/edi-x12-toolkit</PackageProjectUrl>
     <RepositoryUrl>https://github.com/yurii1exe/edi-x12-toolkit</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+    <PackageReleaseNotes>https://github.com/yurii1exe/edi-x12-toolkit/blob/main/CHANGELOG.md</PackageReleaseNotes>
+
+    <!-- A .snupkg alongside the .nupkg, so a consumer can step into this code from their
+         own debugger. PublishRepositoryUrl + EmbedUntrackedSources drive the SDK's
+         built-in Source Link, which stamps the commit into the PDB; ContinuousIntegrationBuild
+         normalises the source paths, and is only true on the CI runner that publishes. -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
   <ItemGroup>
