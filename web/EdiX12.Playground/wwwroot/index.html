@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>X12 playground — parse and validate ANSI X12 EDI in your browser</title>
+    <meta name="description" content="Paste an ANSI X12 interchange and see its declared delimiters, parsed envelope and validation diagnostics. Runs entirely in your browser — the file is never uploaded." />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0e1116" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="X12 playground — EdiX12" />
+    <meta property="og:description" content="Parse and validate ANSI X12 freight EDI in the browser. Your file never leaves the page: no upload, no server, no logging." />
+    <meta property="og:url" content="https://yurii1exe.github.io/edi-x12-toolkit/" />
+    <meta name="twitter:card" content="summary" />
+
+    <!-- Rewritten to /edi-x12-toolkit/ by the Pages workflow. Left as "/" so that
+         `dotnet run` in this folder serves the app at the dev server root. -->
+    <base href="/" />
+
+    <link rel="preload" id="webassembly" />
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <!-- No scoped-CSS bundle link: this app has no .razor.css files, and the framework
+         only emits EdiX12.Playground.styles.css when it does. Linking it would 404. -->
+    <script type="importmap"></script>
+</head>
+
+<body>
+    <div id="app">
+        <svg class="loading-progress">
+            <circle r="40%" cx="50%" cy="50%" />
+            <circle r="40%" cx="50%" cy="50%" />
+        </svg>
+        <div class="loading-progress-text"></div>
+    </div>
+
+    <div id="blazor-error-ui">
+        Something went wrong. <a href="." class="reload">Reload</a>
+        <span class="dismiss">&#x1F5D9;</span>
+    </div>
+    <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
+</body>
+
+</html>
