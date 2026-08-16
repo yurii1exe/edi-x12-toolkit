@@ -10,7 +10,7 @@
 -->
 
 
-Parse, validate and generate ANSI X12 freight EDI in .NET.
+Parse and validate ANSI X12 freight EDI in .NET.
 
 Freight EDI is a solved problem that everyone re-solves badly. Most integrations start
 with `text.Split('~')` and `segment.Split('*')`, work fine against the first partner, and
