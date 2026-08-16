@@ -85,6 +85,18 @@ that asserts it.
 
 ## The playground
 
+![The X12 playground loading two of its built-in samples: the delimiter table changing from asterisk, colon and tilde to pipe, greater-than and a newline when the same document is loaded pipe-delimited, the segment-by-segment breakdown, and the broken sample's X12-SE01-COUNT diagnostic with the SE row highlighted](https://raw.githubusercontent.com/yurii1exe/edi-x12-toolkit/main/docs/playground-demo.gif)
+
+<sub>It opens on `samples/214-shipment-status.edi`: the delimiters that interchange declared,
+where each one was read from in the ISA, the envelope, and nine passing envelope checks.
+One click loads the same document delimited with `|` and terminated by a newline — the
+table follows the ISA. Then every segment with its envelope role and its elements by
+number, and one more click loads the broken sample: `X12-SE01-COUNT` on `SE01`, which
+declares 9 segments where the transaction set contains 7, with that SE row highlighted in
+the segment table. Every parse in the frame is `EdiX12.Core` compiled to WebAssembly and
+executed by the browser — the interchange is never uploaded, and once the page has loaded
+no request leaves it.</sub>
+
 `web/EdiX12.Playground` is a browser page that parses an interchange you paste into it and
 shows the delimiters it declared, its envelope, its diagnostics and every segment with the
 elements named. It is a Blazor WebAssembly app with a project reference to

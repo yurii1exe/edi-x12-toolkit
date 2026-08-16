@@ -412,4 +412,9 @@ a:hover { text-decoration: underline; }
     .tbl-seg .elements { display: block; padding: 0 .6rem .3rem; }
     .tbl-seg tr { display: grid; grid-template-columns: 2.5rem 1fr; }
     .tbl-seg .elements { grid-column: 1 / -1; }
+
+    /* The desktop segment table sizes its identifier column to the longest role label and
+       keeps it on one line. On a phone that label is wider than the card, which pushed the
+       whole table past the card's overflow:hidden edge and sliced every row. Let it wrap. */
+    .tbl-seg .segid { width: auto; white-space: normal; }
 }
