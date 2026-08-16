@@ -83,6 +83,55 @@ var delimiters = X12Tokenizer.ReadDelimiters(text);
 document with different delimiters. They parse to the same object graph. There is a test
 that asserts it.
 
+## The playground
+
+`web/EdiX12.Playground` is a browser page that parses an interchange you paste into it and
+shows the delimiters it declared, its envelope, its diagnostics and every segment with the
+elements named. It is a Blazor WebAssembly app with a project reference to
+`src/EdiX12.Core`, so the parse you see is `X12Parser.Parse` — the same method the package
+ships — compiled to WebAssembly and executed by your browser.
+
+That reference is the point. A JavaScript re-implementation would be a second parser with
+its own bugs, and a demo that agreed with the library only by coincidence. This one cannot
+disagree with it: there is only one parser in the repository.
+
+Nothing is uploaded. `Program.cs` registers no `HttpClient`, and the four one-click samples
+are embedded resources built from `samples/` rather than fetched. Neither the page nor its
+stylesheet loads a resource from another host — no CDN script, no web font, no analytics;
+the only external URLs on the page are links you can choose to click. After the page has
+loaded it makes no network requests at all. There is a test that asserts the no-external-
+resource half of that.
+
+Run it locally:
+
+```bash
+dotnet run --project web/EdiX12.Playground
+```
+
+The playground is **not** part of `EdiX12.sln`. It targets `net10.0`, and keeping it out is
+what lets the claim below — that the .NET 8 SDK builds and tests everything in the solution
+— stay true. It has its own solution:
+
+```bash
+dotnet test web/EdiX12.Playground.sln     # 47 tests, .NET 10 SDK
+```
+
+Twelve of those render the page component into a DOM and assert what a visitor sees: that
+the broken sample's three diagnostics arrive in segment order with `SE01` named beside
+`X12-SE01-COUNT`, that the SE, GE and IEA rows are the ones highlighted, that a
+pipe-delimited file reports `|`, `>` and `\n`, and that a 4010 interchange says ISA11 is
+not a delimiter rather than showing you a `U`.
+
+`dotnet publish` produces a static site — 6.2 MB across 42 files, of which 6.1 MB is the
+.NET runtime and the base class library and 23 KB is `EdiX12.Core` itself. The runtime is
+cached by the browser after the first visit.
+
+`.github/workflows/pages.yml` builds, tests and publishes it to GitHub Pages, rewriting
+`<base href>` to the project-site path and writing a `.nojekyll` so that `_framework` is
+not swallowed. The workflow does not switch Pages on: until
+**Settings → Pages → Source** is set to **GitHub Actions**, its deploy job fails and no
+site exists.
+
 ## Command line
 
 `EdiX12.Cli` packages the same parser as a .NET global tool called `edix12`:
@@ -352,9 +401,10 @@ dotnet test
 dotnet run --project src/EdiX12.Cli -- validate samples/214-broken.edi
 ```
 
-The .NET 8 SDK is the minimum, and it is enough: there is no `global.json` pinning a newer
-SDK, the solution is in the classic `.sln` format, and both the test project and the CLI
-target `net8.0`.
+The .NET 8 SDK is the minimum for `EdiX12.sln`, and it is enough: there is no `global.json`
+pinning a newer SDK, the solution is in the classic `.sln` format, and both the test project
+and the CLI target `net8.0`. The browser playground is the one thing that needs a newer SDK,
+which is why it sits in `web/EdiX12.Playground.sln` and not in this one.
 CI runs the whole build on 8.0.x and 10.0.x, on Linux and Windows, restoring from a clean
 runner with no `NuGet.config` — so the package needs nothing but nuget.org.
 

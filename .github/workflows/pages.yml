@@ -1,0 +1,108 @@
+# Builds the X12 playground — EdiX12.Core compiled to WebAssembly — and publishes the
+# static output to GitHub Pages.
+#
+# This workflow does NOT switch Pages on. Until someone sets
+# Settings -> Pages -> Source to "GitHub Actions" in the repository, the build job runs
+# and the deploy job fails with "Get Pages site failed". That is the intended state: the
+# decision to publish a site is the repository owner's, not this file's.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - 'src/EdiX12.Core/**'
+      - 'samples/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time. In-progress runs are allowed to finish rather than being
+# cancelled, so a half-uploaded artifact never becomes the live site.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # The playground targets net10.0 and is not part of EdiX12.sln, which stays
+      # buildable with the .NET 8 SDK. It has its own solution.
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore web/EdiX12.Playground.sln
+
+      - name: Build (warnings are errors)
+        run: dotnet build web/EdiX12.Playground.sln -c Release --no-restore -warnaserror
+
+      # Covers the embedded samples, the render model and the element-name table. A sample
+      # that stops parsing, or a diagnostic code with no label, fails here rather than on
+      # the live page.
+      - name: Test
+        run: dotnet test web/EdiX12.Playground.sln -c Release --no-build --verbosity normal
+
+      - name: Publish
+        run: dotnet publish web/EdiX12.Playground/EdiX12.Playground.csproj -c Release -o publish
+
+      # A project site is served from /<repo>/, not from /, so every relative asset in
+      # index.html has to resolve against that prefix. The checked-in file keeps "/" so
+      # that `dotnet run` serves the app at the dev server root.
+      - name: Point <base> at the project site path
+        run: |
+          set -euo pipefail
+          base="/${{ github.event.repository.name }}/"
+          index=publish/wwwroot/index.html
+          grep -q '<base href="/" />' "$index"
+          sed -i "s|<base href=\"/\" />|<base href=\"$base\" />|" "$index"
+          grep -F "<base href=\"$base\" />" "$index"
+          # Pre-compressed copies still carry the old <base>, and GitHub Pages does its own
+          # compression, so they would only serve a stale page.
+          rm -f publish/wwwroot/index.html.br publish/wwwroot/index.html.gz
+
+      # Without .nojekyll, Pages runs Jekyll, which drops every path beginning with an
+      # underscore — including _framework, which is the entire .NET runtime.
+      - name: Disable Jekyll and add the SPA fallback
+        run: |
+          set -euo pipefail
+          touch publish/wwwroot/.nojekyll
+          cp publish/wwwroot/index.html publish/wwwroot/404.html
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: publish/wwwroot
+
+  deploy:
+    name: deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
