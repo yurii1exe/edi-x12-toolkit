@@ -12,6 +12,14 @@
 
 Parse and validate ANSI X12 freight EDI in .NET.
 
+![The edix12 CLI reading the delimiters out of two 214 files that use different delimiters, validating a broken envelope into three named diagnostics with exit code 1, and emitting the transaction segments as JSON](https://raw.githubusercontent.com/yurii1exe/edi-x12-toolkit/main/docs/edix12-demo.gif)
+
+<sub>The same command against two files. The first is delimited with `*` and `~`, the second
+with `|` and a newline — both read out of their own ISA rather than assumed. Then a broken
+envelope: three diagnostics that name the element, and exit code 1 so it works as a build
+step. The transcript is real — every command was run against the packed `edix12 0.1.0-alpha`
+tool and the samples in this repository.</sub>
+
 Freight EDI is a solved problem that everyone re-solves badly. Most integrations start
 with `text.Split('~')` and `segment.Split('*')`, work fine against the first partner, and
 break the day a partner sends a file delimited with `|` and terminated with a newline —
