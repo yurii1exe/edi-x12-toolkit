@@ -2,10 +2,17 @@
 
 [![CI](https://github.com/yurii1exe/edi-x12-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/yurii1exe/edi-x12-toolkit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![NuGet](https://img.shields.io/nuget/vpre/EdiX12.Core.svg?label=EdiX12.Core)](https://www.nuget.org/packages/EdiX12.Core/)
-[![NuGet](https://img.shields.io/nuget/vpre/EdiX12.Cli.svg?label=EdiX12.Cli)](https://www.nuget.org/packages/EdiX12.Cli/)
+[![Playground](https://img.shields.io/badge/playground-open-58a6ff)](https://yurii1exe.github.io/edi-x12-toolkit/)
 
 Parse and validate ANSI X12 freight EDI in .NET.
+
+### → [Open the playground](https://yurii1exe.github.io/edi-x12-toolkit/)
+
+Paste an interchange and get back the delimiters it declared, its envelope, its diagnostics
+and every segment with the elements named — in about as long as it takes to read the
+rejection email. Nothing to install, nothing to sign up for, nothing uploaded: the parser
+is `EdiX12.Core` compiled to WebAssembly and run by your browser, so the file stays on your
+machine.
 
 ![The edix12 CLI reading the delimiters out of two 214 files that use different delimiters, validating a broken envelope into three named diagnostics with exit code 1, and emitting the transaction segments as JSON](https://raw.githubusercontent.com/yurii1exe/edi-x12-toolkit/main/docs/edix12-demo.gif)
 
@@ -23,15 +30,23 @@ which is entirely legal, and common.
 EdiX12 handles the envelope, the delimiters and the control numbers correctly, so you work
 with typed objects instead of string-splitting.
 
+[![EdiX12.Core on nuget.org](https://img.shields.io/nuget/vpre/EdiX12.Core.svg?label=EdiX12.Core)](https://www.nuget.org/packages/EdiX12.Core/)
+[![EdiX12.Cli on nuget.org](https://img.shields.io/nuget/vpre/EdiX12.Cli.svg?label=EdiX12.Cli)](https://www.nuget.org/packages/EdiX12.Cli/)
+
 ```bash
 dotnet add package EdiX12.Core --prerelease
 ```
 
-`--prerelease` is not optional: `0.1.0-alpha` is a prerelease, and NuGet will not resolve
-it without the flag. The two badges above read the feed live, so they say what is actually
-published rather than what this file claims. Every package is produced by the CI pack job,
-which installs the `edix12` tool from the package it has just built and runs it against
-the samples in this repository before the artifact is kept.
+The two badges query nuget.org when you load this page and report the version on the feed,
+so they — not this file — are what tells you whether that command resolves right now.
+`--prerelease` is not optional for `0.1.0-alpha`: NuGet will not resolve a prerelease
+without the flag.
+
+Neither package has to resolve for you to run the parser. The playground is one click, and
+from a clone `dotnet run --project src/EdiX12.Cli -- validate samples/214-broken.edi`
+builds and runs the tool with no package involved. Every package is produced by the CI pack
+job, which installs the `edix12` tool from the package it has just built and runs it
+against the samples in this repository before the artifact is kept.
 
 ```csharp
 var interchange = X12Parser.Parse(File.ReadAllText("shipment.edi"));
@@ -85,17 +100,23 @@ that asserts it.
 
 ## The playground
 
+### → [yurii1exe.github.io/edi-x12-toolkit](https://yurii1exe.github.io/edi-x12-toolkit/)
+
+Paste the interchange a partner just rejected and read what is wrong with it. No install,
+no upload, no account.
+
 ![The X12 playground loading two of its built-in samples: the delimiter table changing from asterisk, colon and tilde to pipe, greater-than and a newline when the same document is loaded pipe-delimited, the segment-by-segment breakdown, and the broken sample's X12-SE01-COUNT diagnostic with the SE row highlighted](https://raw.githubusercontent.com/yurii1exe/edi-x12-toolkit/main/docs/playground-demo.gif)
 
-<sub>It opens on `samples/214-shipment-status.edi`: the delimiters that interchange declared,
-where each one was read from in the ISA, the envelope, and nine passing envelope checks.
-One click loads the same document delimited with `|` and terminated by a newline — the
-table follows the ISA. Then every segment with its envelope role and its elements by
-number, and one more click loads the broken sample: `X12-SE01-COUNT` on `SE01`, which
-declares 9 segments where the transaction set contains 7, with that SE row highlighted in
-the segment table. Every parse in the frame is `EdiX12.Core` compiled to WebAssembly and
-executed by the browser — the interchange is never uploaded, and once the page has loaded
-no request leaves it.</sub>
+<sub>The recording starts on `samples/214-shipment-status.edi`: the delimiters that
+interchange declared, where each one was read from in the ISA, the envelope, and nine
+passing envelope checks. One click loads the same document delimited with `|` and
+terminated by a newline — the table follows the ISA. Then every segment with its envelope
+role and its elements by number, and one more click loads the broken sample:
+`X12-SE01-COUNT` on `SE01`, which declares 9 segments where the transaction set contains 7,
+with that SE row highlighted in the segment table. Every parse in the frame is
+`EdiX12.Core` compiled to WebAssembly and executed by the browser — the interchange is
+never uploaded, and once the page has loaded no request leaves it. The live page opens on
+the broken sample, so those three diagnostics are on screen before you click anything.</sub>
 
 `web/EdiX12.Playground` is a browser page that parses an interchange you paste into it and
 shows the delimiters it declared, its envelope, its diagnostics and every segment with the
@@ -135,14 +156,15 @@ pipe-delimited file reports `|`, `>` and `\n`, and that a 4010 interchange says 
 not a delimiter rather than showing you a `U`.
 
 `dotnet publish` produces a static site — 6.2 MB across 42 files, of which 6.1 MB is the
-.NET runtime and the base class library and 23 KB is `EdiX12.Core` itself. The runtime is
-cached by the browser after the first visit.
+.NET runtime and the base class library and 23 KB is `EdiX12.Core` itself. GitHub Pages
+compresses on the fly, so a first visit transfers about 2.4 MB of that: `dotnet.native.wasm`
+is 2.9 MB on disk and 1.1 MB over the wire, `System.Private.CoreLib.wasm` 1.5 MB and 566 KB.
+The runtime is cached by the browser after the first visit.
 
-`.github/workflows/pages.yml` builds, tests and publishes it to GitHub Pages, rewriting
-`<base href>` to the project-site path and writing a `.nojekyll` so that `_framework` is
-not swallowed. The workflow does not switch Pages on: until
-**Settings → Pages → Source** is set to **GitHub Actions**, its deploy job fails and no
-site exists.
+`.github/workflows/pages.yml` builds, tests and publishes it to GitHub Pages on every push
+that touches `web/`, `src/EdiX12.Core/` or `samples/`, rewriting `<base href>` to the
+project-site path and writing a `.nojekyll` so that `_framework` is not swallowed. What it
+deploys is served at **<https://yurii1exe.github.io/edi-x12-toolkit/>**.
 
 ## Command line
 

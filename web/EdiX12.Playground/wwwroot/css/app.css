@@ -405,10 +405,48 @@ a:hover { text-decoration: underline; }
     .grid { grid-template-columns: 1fr; }
     .pane-input { position: static; }
     .editor { min-height: 180px; font-size: 12px; }
+    .tbl th, .tbl td { padding-left: .6rem; padding-right: .6rem; }
+
+    /* Four columns of a diagnostic do not fit across a phone. The code alone is 17
+       monospace characters, and holding it on one line leaves the message column about a
+       quarter of the card — two words a line. Stack each diagnostic instead, the way the
+       segment table already stacks its elements: the code and its segment position on one
+       line, the element under it, then the message across the full width of the card. */
+    .tbl-diag thead { display: none; }
+
+    .tbl-diag tbody tr {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        padding: .35rem 0;
+        border-bottom: 1px solid var(--line);
+    }
+
+    .tbl-diag tbody tr:last-child { border-bottom: 0; }
+    .tbl-diag tbody td { border-bottom: 0; padding-top: .1rem; padding-bottom: .1rem; }
+
+    /* The desktop column widths are what a four-column row needs. A stacked row sizes
+       itself, so they are released here — at the same specificity that set them, or they
+       keep winning and the grid tracks stay at the desktop numbers. */
     .tbl-diag td:nth-child(1),
     .tbl-diag td:nth-child(2),
     .tbl-diag td:nth-child(3) { width: auto; white-space: normal; }
-    .tbl th, .tbl td { padding-left: .6rem; padding-right: .6rem; }
+
+    .tbl-diag tbody td:nth-child(3),
+    .tbl-diag tbody td:nth-child(4) { grid-column: 1 / -1; }
+
+    /* The element reference and its name sit side by side once the row is full width. */
+    .tbl-diag tbody td:nth-child(3) .dim { display: inline; }
+
+    /* Names the bare segment number now that the column headings are gone. Held on one
+       line so the auto track is sized from the whole label rather than from one word. */
+    .tbl-diag tbody td.num { white-space: nowrap; }
+    .tbl-diag tbody td.num::before { content: "segment "; }
+
+    /* The diagnostic code is the widest unbreakable string on the page. Nothing about it
+       needs one line, and holding it on one line is what sets the table's minimum width
+       above the card's. */
+    .tbl-diag .code-bad { white-space: normal; overflow-wrap: anywhere; }
+
     .tbl-seg .elements { display: block; padding: 0 .6rem .3rem; }
     .tbl-seg tr { display: grid; grid-template-columns: 2.5rem 1fr; }
     .tbl-seg .elements { grid-column: 1 / -1; }

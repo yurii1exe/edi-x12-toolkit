@@ -1,10 +1,10 @@
 # Builds the X12 playground — EdiX12.Core compiled to WebAssembly — and publishes the
-# static output to GitHub Pages.
+# static output to GitHub Pages, where it is served at
+# https://yurii1exe.github.io/edi-x12-toolkit/
 #
-# This workflow does NOT switch Pages on. Until someone sets
-# Settings -> Pages -> Source to "GitHub Actions" in the repository, the build job runs
-# and the deploy job fails with "Get Pages site failed". That is the intended state: the
-# decision to publish a site is the repository owner's, not this file's.
+# The deploy job takes its target from Settings -> Pages -> Source, which is set to
+# "GitHub Actions". Point that elsewhere and the job reports "Get Pages site failed"
+# rather than deploying.
 name: Pages
 
 on:

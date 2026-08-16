@@ -17,11 +17,15 @@ made early.
   segments with the elements named. It has a project reference to `EdiX12.Core`, so it runs
   the library rather than a re-implementation of it. No `HttpClient` is registered and the
   one-click samples are embedded from `samples/`, so the page makes no network request once
-  it has loaded. `.github/workflows/pages.yml` builds, tests and publishes it; enabling
-  GitHub Pages is a repository setting and is not done by the workflow.
+  it has loaded. `.github/workflows/pages.yml` builds, tests and publishes it to GitHub
+  Pages, where it is served at <https://yurii1exe.github.io/edi-x12-toolkit/>.
 
 ### Changed
 
+- Below 900px a diagnostic stacks into a single column: the code and its segment position
+  on one line, the element under it, then the message across the full width of the card.
+  Measured in Chrome at a 390px viewport, the diagnostics table needs 123px of the card's
+  356px where it needed 356.27px.
 - `EdiX12.Core` and `EdiX12.Cli` now pack a `.snupkg` and carry Source Link metadata, so a
   consumer can step into the library from their own debugger.
 
