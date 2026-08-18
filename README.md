@@ -458,6 +458,32 @@ production interchange or any partner's implementation guide.
 This project is not affiliated with, endorsed by, or derived from the Accredited Standards
 Committee X12. "X12" is used here only to name the standard the library reads.
 
+## Demo media
+
+Both recordings shown above are held in `docs/`, alongside the three playground captures. The
+published videos and their posters are cut from the recordings; the published stills are either
+frames from those recordings or captures of the deployed build at
+<https://yurii1exe.github.io/edi-x12-toolkit/>.
+
+| Source | What it shows | Published as |
+|---|---|---|
+| `docs/edix12-demo.gif` | 1336×928, 29s. `edix12 delimiters` against two 214 files that declare different delimiters, `edix12 validate` turning a broken envelope into three named diagnostics and exiting non-zero, and `edix12 parse` piped through `jq` | `cli.mp4`, `cli.webm`, the poster `cli.webp`, and the still `cli-json.webp` |
+| `docs/playground-demo.gif` | 880×560, 18s. The browser playground on two built-in samples — the delimiter table following each interchange's own ISA, the segment table with every envelope role, and the broken sample resolving to `X12-SE01-COUNT`, `X12-GE01-COUNT` and `X12-IEA02-CONTROL` | `playground.mp4`, `playground.webm`, and the poster `playground.webp` |
+| `docs/live-diagnostics.png` | 2880×1800. A deliberately broken interchange pasted into the live playground, resolving to `X12-SE01-COUNT`, `X12-GE01-COUNT` and `X12-IEA02-CONTROL`, with the failing rows flagged in the segment table below | `live-diagnostics.webp` |
+| `docs/live-segments.png` | 2880×1800. The built-in *214 shipment status* sample parsed, every segment listed in order with its elements numbered | `live-segments.webp` |
+| `docs/live-delimiters.png` | 2880×1800. The built-in *Same file, pipe-delimited* sample, its delimiter table reporting each character and the ISA position it came from | `live-delimiters.webp` |
+
+The published files live in the site repository under
+`TheSite/ClientApp/src/assets/portfolio/edi-x12-toolkit/`, with the card thumbnail
+`edi-x12-toolkit.webp` one directory above. Provenance runs two ways and this repository holds the
+source for both. The videos and their posters are produced from the two recordings with ffmpeg —
+mp4 and webm per recording, a webp poster beside them. The stills are either frames cut from those
+recordings or Playwright captures of the deployed playground, converted to webp with ffmpeg. Every
+derivative is regenerated rather than edited.
+
+They feed the `edi-x12-toolkit` entry on disit.tech/work, whose case study is at
+`/services/software-development/edi-x12-toolkit`.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
